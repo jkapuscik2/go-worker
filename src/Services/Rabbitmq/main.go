@@ -1,4 +1,4 @@
-package rabbitmq
+package Rabbitmq
 
 import (
 	"fmt"
@@ -8,20 +8,19 @@ import (
 	"runtime"
 )
 
-
 type Rabbit struct {
 	channel *amqp.Channel
 }
 
 func (r Rabbit) Publish(msg string, queue string) {
 	err := r.channel.Publish(
-		"",           // exchange
-		queue,       // routing key
-		false,        // mandatory
+		"",
+		queue,
 		false,
-		amqp.Publishing {
+		false,
+		amqp.Publishing{
 			DeliveryMode: amqp.Persistent,
-			ContentType:  "text/plain",
+			ContentType:  "application/json",
 			Body:         []byte(msg),
 		})
 	failOnError(err, "Failed to publish a message")
@@ -61,7 +60,7 @@ func (r *Rabbit) Connect() {
 	r.channel = ch
 }
 
-func (r Rabbit) Close()  {
+func (r Rabbit) Close() {
 	r.channel.Close()
 }
 

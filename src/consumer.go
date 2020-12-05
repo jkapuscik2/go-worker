@@ -1,10 +1,12 @@
 package main
 
 import (
+	"encoding/json"
 	"github.com/joho/godotenv"
 	"github.com/streadway/amqp"
-	"golang.org/x/crypto/bcrypt"
-	"jkapuscik2/go-worker/src/services/rabbitmq"
+	"jkapuscik2/go-worker/src/Consumer/Handlers/MakeHash"
+	"jkapuscik2/go-worker/src/Services/Messages"
+	"jkapuscik2/go-worker/src/Services/Rabbitmq"
 	"log"
 	"os"
 	"time"
@@ -15,7 +17,7 @@ func init() {
 }
 
 func main() {
-	r := rabbitmq.Rabbit{}
+	r := Rabbitmq.Rabbit{}
 	r.Connect()
 	defer r.Close()
 
@@ -28,11 +30,32 @@ func main() {
 	}
 }
 
-func handle(msg amqp.Delivery, start time.Time) {
-	log.Printf("Received a message: %s", msg.Body)
-	hash, _ := bcrypt.GenerateFromPassword(msg.Body, bcrypt.DefaultCost)
-	log.Printf("Calculated hash: %s", hash)
+func handle(m amqp.Delivery, appStart time.Time) {
+	start := time.Now()
+	log.Printf("Received a message: %s", m.Body)
 
-	log.Printf("Time from start %s", time.Now().Sub(start))
-	msg.Ack(false)
+	defer log.Printf("Time from start %s", time.Now().Sub(appStart))
+	defer log.Printf("Msg handled in %s", time.Now().Sub(start))
+	defer m.Ack(false)
+
+	msg := Messages.Msg{}
+	err := json.Unmarshal(m.Body, &msg)
+
+	if err != nil {
+		log.Printf("Invalid msg received %s: %s", m.Body, err.Error())
+		return
+	}
+
+	switch msg.Type {
+	case "MakeHash":
+		log.Println("Received make hash msg")
+		makeHashMsg := Messages.MakeHashMsq{}
+		err := json.Unmarshal(m.Body, &makeHashMsg)
+		if err != nil {
+			log.Printf("Invalid make hash msg received %s: %s", m.Body, err.Error)
+			return
+		}
+
+		MakeHash.Handle(makeHashMsg)
+	}
 }
