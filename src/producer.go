@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/joho/godotenv"
-	"jkapuscik2/go-worker/src/Services/Messages"
+	"jkapuscik2/go-worker/src/Messages"
 	"jkapuscik2/go-worker/src/Services/Rabbitmq"
 	"os"
 	"time"

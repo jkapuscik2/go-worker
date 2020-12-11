@@ -1,17 +1,18 @@
 package MakeHash
 
 import (
+	"fmt"
 	"golang.org/x/crypto/bcrypt"
-	"jkapuscik2/go-worker/src/Services/Messages"
-	"log"
+	"jkapuscik2/go-worker/src/Messages"
+	logger "jkapuscik2/go-worker/src/Services/Logger"
 )
 
-func Handle(msg Messages.MakeHashMsq) {
+func Handle(msg Messages.MakeHashMsq, logger logger.Logger) {
 	hash, err := bcrypt.GenerateFromPassword([]byte(msg.Data.Password), bcrypt.DefaultCost)
 
 	if err != nil {
-		log.Println(err.Error())
+		logger.Log(fmt.Sprintf(err.Error()))
 	} else {
-		log.Printf("Calculated hash: %s for %s", hash, msg.Data.Password)
+		logger.Log(fmt.Sprintf("Calculated hash: %s for %s", hash, msg.Data.Password))
 	}
 }

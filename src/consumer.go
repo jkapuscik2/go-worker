@@ -2,12 +2,14 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
+	"github.com/google/uuid"
 	"github.com/joho/godotenv"
 	"github.com/streadway/amqp"
 	"jkapuscik2/go-worker/src/Consumer/Handlers/MakeHash"
-	"jkapuscik2/go-worker/src/Services/Messages"
+	"jkapuscik2/go-worker/src/Messages"
+	"jkapuscik2/go-worker/src/Services/Logger"
 	"jkapuscik2/go-worker/src/Services/Rabbitmq"
-	"log"
 	"os"
 	"time"
 )
@@ -32,30 +34,31 @@ func main() {
 
 func handle(m amqp.Delivery, appStart time.Time) {
 	start := time.Now()
-	log.Printf("Received a message: %s", m.Body)
+	logger := logger.Logger{uuid.New().String()}
+	logger.Log(fmt.Sprintf("Received a message: %s", m.Body))
 
-	defer log.Printf("Time from start %s", time.Now().Sub(appStart))
-	defer log.Printf("Msg handled in %s", time.Now().Sub(start))
+	defer logger.Log(fmt.Sprintf("Time from start %s", time.Now().Sub(appStart)))
+	defer logger.Log(fmt.Sprintf("Msg handled in %s", time.Now().Sub(start)))
 	defer m.Ack(false)
 
 	msg := Messages.Msg{}
 	err := json.Unmarshal(m.Body, &msg)
 
 	if err != nil {
-		log.Printf("Invalid msg received %s: %s", m.Body, err.Error())
+		logger.Log(fmt.Sprintf(fmt.Sprintf("Invalid msg received %s: %s", m.Body, err.Error())))
 		return
 	}
 
 	switch msg.Type {
 	case "MakeHash":
-		log.Println("Received make hash msg")
+		logger.Log(fmt.Sprintf("Received make hash msg"))
 		makeHashMsg := Messages.MakeHashMsq{}
 		err := json.Unmarshal(m.Body, &makeHashMsg)
 		if err != nil {
-			log.Printf("Invalid make hash msg received %s: %s", m.Body, err.Error)
+			logger.Log(fmt.Sprintf("Invalid make hash msg received %s: %s", m.Body, err.Error))
 			return
 		}
 
-		MakeHash.Handle(makeHashMsg)
+		MakeHash.Handle(makeHashMsg, logger)
 	}
 }
